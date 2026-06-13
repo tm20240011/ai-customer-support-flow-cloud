@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Support System</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6fb;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        textarea {
+            resize: none;
+            height: 100px;
+        }
+
+        button {
+            padding: 10px 15px;
+            margin: 5px 5px 15px 0;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .send {
+            background: #4f46e5;
+            color: white;
+        }
+
+        .load {
+            background: #10b981;
+            color: white;
+        }
+
+        .ticket {
+            border: 1px solid #e5e7eb;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 10px;
+            background: #fafafa;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: white;
+        }
+
+        .high { background: #ef4444; }
+        .medium { background: #f59e0b; }
+        .low { background: #10b981; }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h2>AI Support System</h2>
+
+    <input id="name" placeholder="Ime">
+    <input id="email" placeholder="Email adresa">
+    <textarea id="message" placeholder="Poruka"></textarea>
+
+    <button class="send" onclick="sendMessage()">Posalji</button>
+    <button class="load" onclick="loadTickets()">Prikazi sve tikete</button>
+
+    <hr>
+
+    <div id="result"></div>
+
+</div>
+
+<script>
+
+    async function sendMessage() {
+
+        const name = document.getElementById("name").value;
+        const email = document.getElementById("email").value;
+        const message = document.getElementById("message").value;
+
+        document.getElementById("result").innerHTML =
+            "<p>Saljem tiket i kontaktiram AI...</p>";
+
+        const response = await fetch("http://localhost:3000/support", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ name, email, message })
+        });
+
+        const data = await response.json();
+
+        document.getElementById("result").innerHTML = `
+            <div class="ticket">
+                <h3>Tiket kreiran!</h3>
+
+                <p><b>ID:</b> ${data.id}</p>
+
+                <p>
+                    <b>Tip:</b> ${data.type}
+                </p>
+
+                <p>
+                    <b>Prioritet:</b>
+                    <span class="badge ${data.priority === 'visoko' ? 'high' : data.priority === 'srednje' ? 'medium' : 'low'}">
+                        ${data.priority}
+                    </span>
+                </p>
+
+                <hr>
+
+                <h4>AI odgovor:</h4>
+                <p>${data.reply}</p>
+
+                <details>
+                    <summary>Debug info</summary>
+                    <pre>${JSON.stringify(data.debug, null, 2)}</pre>
+                </details>
+            </div>
+        `;
+    }
+
+    async function loadTickets() {
+
+        const res = await fetch("http://localhost:3000/support");
+        const data = await res.json();
+
+        let html = "<h3>Svi tiketi</h3>";
+
+        data.forEach(t => {
+            html += `
+                <div class="ticket">
+                    <b>ID:</b> ${t.id}<br>
+                    <b>Ime:</b> ${t.name}<br>
+                    <b>Email:</b> ${t.email}<br>
+                    <b>Poruka:</b> ${t.message}<br>
+                    <b>Status:</b> ${t.status}<br>
+                    <b>Tip:</b> ${t.type}<br>
+                    <b>Prioritet:</b> ${t.priority}<br>
+
+                    <br>
+
+                    <button onclick="updateStatus(${t.id}, 'open')">Otvoreno</button>
+                    <button onclick="updateStatus(${t.id}, 'in progress')">U procesu</button>
+                    <button onclick="updateStatus(${t.id}, 'resolved')">Reseno</button>
+                </div>
+            `;
+        });
+
+        document.getElementById("result").innerHTML = html;
+    }
+
+    async function updateStatus(id, status) {
+
+        await fetch(`http://localhost:3000/support/${id}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ status })
+        });
+
+        loadTickets();
+    }
+
+</script>
+
+</body>
+</html>
