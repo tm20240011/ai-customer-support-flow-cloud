@@ -33,7 +33,7 @@ const rules = [
 
 //DB konekcija...
 const db = mysql.createConnection({
-    host: process.env.DB_HOST || "ai-support-projekat-mysql-1",
+    host: process.env.DB_HOST || "ai-customer-support-mysql",
     user: "root",
     password: "root",
     port: 3306,
